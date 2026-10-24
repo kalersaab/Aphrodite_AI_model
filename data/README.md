@@ -27,5 +27,5 @@
 
 ```bash
 # From project root
-./kaler_gpt --data data/raw/tiny_shakespeare.txt --train
+./aphrodite --data data/raw/tiny_shakespeare.txt --train
 ```

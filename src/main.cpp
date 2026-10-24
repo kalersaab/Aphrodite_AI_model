@@ -6,7 +6,8 @@
 
 int main() {
     using kaler::math::Matrix;
-    std::cout << "KALER GPT — Phase 1 numerical foundation\n\n";
+    std::cout << "APHRODITE — A GPT Language Model Implementation\n";
+    std::cout << "Phase 1: Neural network foundation\n\n";
 
     const Matrix a(2, 3, {1, 2, 3, 4, 5, 6});
     const Matrix b(3, 2, {7, 8, 9, 10, 11, 12});
