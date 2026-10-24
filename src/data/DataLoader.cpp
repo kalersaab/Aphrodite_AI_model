@@ -7,53 +7,72 @@
 namespace kaler {
 namespace data {
 
+namespace {
+std::vector<std::string> utf8Characters(const std::string& text) {
+    std::vector<std::string> out;
+    for (std::size_t i = 0; i < text.size();) {
+        const unsigned char lead = static_cast<unsigned char>(text[i]);
+        std::size_t len = 1;
+        if ((lead & 0xE0) == 0xC0) len = 2;
+        else if ((lead & 0xF0) == 0xE0) len = 3;
+        else if ((lead & 0xF8) == 0xF0) len = 4;
+        if (i + len > text.size()) len = 1;
+        bool valid = len > 1;
+        for (std::size_t j = 1; j < len && valid; ++j) {
+            const unsigned char continuation = static_cast<unsigned char>(text[i + j]);
+            if ((continuation & 0xC0) != 0x80) valid = false;
+        }
+        if (!valid) len = 1;
+        out.emplace_back(text.substr(i, len));
+        i += len;
+    }
+    return out;
+}
+}
+
 void CharTokenizer::fit(const std::string& text) {
-    char_to_idx_['\0'] = 0;
-    idx_to_char_[0] = '\0';
-    
-    int next_idx = 1;
-    
-    for (char c : text) {
-        if (char_to_idx_.find(c) == char_to_idx_.end()) {
-            char_to_idx_[c] = next_idx;
-            idx_to_char_[next_idx] = c;
-            next_idx++;
+    char_to_idx_.clear();
+    idx_to_char_.clear();
+    // Reserve 0 for padding and 1 for unknown; UTF-8 characters start at 2.
+    int next_idx = 2;
+    for (const auto& token : utf8Characters(text)) {
+        if (char_to_idx_.find(token) == char_to_idx_.end()) {
+            char_to_idx_[token] = next_idx;
+            idx_to_char_[next_idx] = token;
+            ++next_idx;
         }
     }
-    
-    std::cout << "Vocabulary built: " << vocab_size() << " unique characters\n";
+    std::cout << "Vocabulary built: " << vocab_size() << " tokens (including PAD/UNK)\n";
 }
 
 std::vector<int> CharTokenizer::encode(const std::string& text) const {
     std::vector<int> tokens;
-    tokens.reserve(text.size());
-    
-    for (char c : text) {
-        auto it = char_to_idx_.find(c);
-        if (it != char_to_idx_.end()) {
-            tokens.push_back(it->second);
-        } else {
-            tokens.push_back(unk_token());
-        }
+    const auto characters = utf8Characters(text);
+    tokens.reserve(characters.size());
+    for (const auto& token : characters) {
+        auto it = char_to_idx_.find(token);
+        tokens.push_back(it != char_to_idx_.end() ? it->second : unk_token());
     }
-    
     return tokens;
 }
 
 std::string CharTokenizer::decode(const std::vector<int>& tokens) const {
     std::string text;
-    text.reserve(tokens.size());
-    
     for (int token : tokens) {
+        if (token == pad_token()) continue;
         auto it = idx_to_char_.find(token);
-        if (it != idx_to_char_.end()) {
-            text += it->second;
-        } else {
-            text += '?';
-        }
+        if (it != idx_to_char_.end()) text += it->second;
+        else text += '?';
     }
-    
     return text;
+}
+
+void CharTokenizer::add_char(const std::string& token) {
+    if (char_to_idx_.find(token) == char_to_idx_.end()) {
+        const int next_idx = static_cast<int>(char_to_idx_.size()) + 2;
+        char_to_idx_[token] = next_idx;
+        idx_to_char_[next_idx] = token;
+    }
 }
 
 TextDataLoader::TextDataLoader(const std::string& filepath,
@@ -81,6 +100,12 @@ bool TextDataLoader::load() {
         std::string text = load_file();
         std::cout << "Loaded " << text.size() << " characters from " << filepath_ << "\n";
         
+        if (batch_size_ == 0 || seq_length_ == 0) {
+            throw std::runtime_error("batch_size and seq_length must be positive");
+        }
+        if (text.size() < seq_length_ + 1) {
+            throw std::runtime_error("Dataset must contain at least seq_length + 1 characters");
+        }
         tokenizer_.fit(text);
         tokens_ = tokenizer_.encode(text);
         

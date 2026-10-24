@@ -32,7 +32,14 @@ math::Matrix Dense::forward(const math::Matrix& input) {
 
 math::Matrix Dense::backward(const math::Matrix& grad_output) {
     math::Matrix input_T = cached_input_.transpose();
-    weight_.grad() = matmul(grad_output, input_T);
+    
+    // Accumulate weight gradients (critical for multi-path backprop)
+    math::Matrix grad_weight = matmul(grad_output, input_T);
+    for (size_t i = 0; i < grad_weight.rows(); ++i) {
+        for (size_t j = 0; j < grad_weight.cols(); ++j) {
+            const_cast<double&>(weight_.grad()(i, j)) += grad_weight(i, j);
+        }
+    }
     
     if (use_bias_) {
         for (size_t i = 0; i < grad_output.rows(); ++i) {
@@ -40,7 +47,7 @@ math::Matrix Dense::backward(const math::Matrix& grad_output) {
             for (size_t j = 0; j < grad_output.cols(); ++j) {
                 sum += grad_output(i, j);
             }
-            const_cast<double&>(bias_.grad()(i, 0)) = sum;
+            const_cast<double&>(bias_.grad()(i, 0)) += sum;
         }
     }
     

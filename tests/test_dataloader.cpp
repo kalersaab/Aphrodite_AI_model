@@ -20,6 +20,8 @@ void test_tokenizer() {
     std::cout << "Decoded: " << decoded << "\n";
     
     assert(decoded == sample && "Encode/decode should be reversible");
+    assert(tokens.front() >= 2 && "real character IDs must not collide with PAD/UNK");
+    assert(tokenizer.encode("~").front() == tokenizer.unk_token() || sample.find('~') != std::string::npos);
     std::cout << "✓ Tokenizer test passed\n\n";
 }
 

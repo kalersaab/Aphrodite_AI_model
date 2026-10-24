@@ -22,8 +22,16 @@ math::Matrix Loss::softmax(const math::Matrix& logits) {
             sum += val;
         }
         
-        for (size_t i = 0; i < logits.rows(); ++i) {
-            const_cast<double&>(output(i, j)) /= sum;
+        // Numerical safety: handle underflow case
+        if (sum < 1e-10 || !std::isfinite(sum)) {
+            // Uniform distribution fallback
+            for (size_t i = 0; i < logits.rows(); ++i) {
+                const_cast<double&>(output(i, j)) = 1.0 / logits.rows();
+            }
+        } else {
+            for (size_t i = 0; i < logits.rows(); ++i) {
+                const_cast<double&>(output(i, j)) /= sum;
+            }
         }
     }
     

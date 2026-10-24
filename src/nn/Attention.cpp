@@ -8,7 +8,6 @@ namespace nn {
 MultiHeadAttention::MultiHeadAttention(size_t d_model, size_t num_heads)
     : d_model_(d_model)
     , num_heads_(num_heads)
-    , d_k_(d_model / num_heads)
     , cached_input_(1, 1, 0.0)
     , cached_q_(1, 1, 0.0)
     , cached_k_(1, 1, 0.0)
@@ -16,6 +15,16 @@ MultiHeadAttention::MultiHeadAttention(size_t d_model, size_t num_heads)
     , cached_attn_weights_(1, 1, 0.0)
     , cached_attn_output_(1, 1, 0.0)
     , use_causal_mask_(false) {
+    
+    // Validation for numerical safety
+    if (d_model == 0 || num_heads == 0) {
+        throw std::invalid_argument("d_model and num_heads must be positive");
+    }
+    if (d_model % num_heads != 0) {
+        throw std::invalid_argument("d_model must be divisible by num_heads");
+    }
+    
+    d_k_ = d_model / num_heads;
     
     q_proj_ = std::make_unique<Dense>(d_model, d_model, false);
     k_proj_ = std::make_unique<Dense>(d_model, d_model, false);

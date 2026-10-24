@@ -41,6 +41,7 @@ public:
     double compute_loss(const std::vector<int>& token_ids);
     
     std::vector<Parameter*> parameters();
+    const GPTConfig& config() const { return config_; }
     
     std::vector<int> generate(const std::vector<int>& prompt, size_t max_new_tokens);
 

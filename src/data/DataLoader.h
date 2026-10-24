@@ -28,17 +28,17 @@ public:
     std::string decode(const std::vector<int>& tokens) const;
     
     // Get vocabulary size
-    size_t vocab_size() const { return char_to_idx_.size(); }
+    size_t vocab_size() const { return char_to_idx_.size() + 2; }
     
     // Get special tokens
     int pad_token() const { return 0; }
     int unk_token() const { return 1; }
 
 private:
-    std::unordered_map<char, int> char_to_idx_;
-    std::unordered_map<int, char> idx_to_char_;
+    std::unordered_map<std::string, int> char_to_idx_;
+    std::unordered_map<int, std::string> idx_to_char_;
     
-    void add_char(char c);
+    void add_char(const std::string& token);
 };
 
 /**
@@ -71,6 +71,7 @@ public:
     // Get dataset statistics
     size_t num_batches() const;
     size_t dataset_size() const { return tokens_.size(); }
+    const std::vector<int>& tokens() const { return tokens_; }
     size_t vocab_size() const { return tokenizer_.vocab_size(); }
     
     // Get the tokenizer

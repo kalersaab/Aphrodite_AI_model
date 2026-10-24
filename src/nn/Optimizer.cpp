@@ -33,6 +33,10 @@ void Adam::step() {
     
     t_++;
     
+    // Compute bias correction terms with numerical safety
+    const double bias_correction1 = std::max(1.0 - std::pow(beta1_, t_), 1e-8);
+    const double bias_correction2 = std::max(1.0 - std::pow(beta2_, t_), 1e-8);
+    
     for (size_t idx = 0; idx < parameters_.size(); ++idx) {
         auto* param = parameters_[idx];
         auto& data = param->data();
@@ -42,16 +46,28 @@ void Adam::step() {
         
         for (size_t i = 0; i < data.rows(); ++i) {
             for (size_t j = 0; j < data.cols(); ++j) {
+                // Update biased first moment estimate
                 double m_val = beta1_ * m(i, j) + (1.0 - beta1_) * grad(i, j);
+                // Update biased second raw moment estimate
                 double v_val = beta2_ * v(i, j) + (1.0 - beta2_) * grad(i, j) * grad(i, j);
                 
                 const_cast<double&>(m(i, j)) = m_val;
                 const_cast<double&>(v(i, j)) = v_val;
                 
-                double m_hat = m_val / (1.0 - std::pow(beta1_, t_));
-                double v_hat = v_val / (1.0 - std::pow(beta2_, t_));
+                // Compute bias-corrected moment estimates
+                double m_hat = m_val / bias_correction1;
+                double v_hat = v_val / bias_correction2;
                 
-                const_cast<double&>(data(i, j)) -= learning_rate_ * m_hat / (std::sqrt(v_hat) + epsilon_);
+                // Compute update with numerical safety
+                double denominator = std::sqrt(v_hat) + epsilon_;
+                double update = learning_rate_ * m_hat / denominator;
+                
+                // Guard against non-finite updates
+                if (!std::isfinite(update)) {
+                    continue; // Skip this parameter update
+                }
+                
+                const_cast<double&>(data(i, j)) -= update;
             }
         }
     }

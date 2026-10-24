@@ -50,6 +50,10 @@ public:
     void step() override;
     void zero_grad() override;
 
+public:
+    void set_learning_rate(double learning_rate) { learning_rate_ = learning_rate; }
+    double learning_rate() const { return learning_rate_; }
+
 private:
     double learning_rate_;
     double beta1_;
