@@ -1,4 +1,4 @@
-# KALER GPT — Phase 1
+# Aphrodite — Phase 1
 
 A dependency-free C++20 numerical foundation for a GPT-style language model built from scratch.
 
@@ -14,7 +14,7 @@ No pretrained weights, ML framework, or third-party math library is used in Phas
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure
-./build/kaler_gpt
+./build/aphrodite
 ```
 
 ## Phase 1 scope
